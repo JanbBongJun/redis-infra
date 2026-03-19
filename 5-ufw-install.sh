@@ -15,12 +15,12 @@ echo "=== 3. SSH 허용 (잠금 방지) ==="
 sudo ufw allow 22/tcp
 
 echo ""
-echo "=== 4. Redis 포트 허용 (6379 - 내부망만) ==="
-sudo ufw allow from 192.168.45.0/24 to any port 6379 proto tcp
+echo "=== 4. Redis 포트 허용 (6379 - 호스트 서버만) ==="
+sudo ufw allow from 192.168.45.68 to any port 6379 proto tcp
 
 echo ""
-echo "=== 5. Bull-Board 포트 허용 (3000 - 내부망만) ==="
-sudo ufw allow from 192.168.45.0/24 to any port 3000 proto tcp
+echo "=== 5. Bull-Board 포트 허용 (3000 - 호스트 서버만) ==="
+sudo ufw allow from 192.168.45.68 to any port 3000 proto tcp
 
 echo ""
 echo "=== 6. UFW 활성화 ==="
@@ -36,8 +36,8 @@ if ! grep -q "DOCKER-USER" /etc/ufw/after.rules 2>/dev/null; then
 # Docker UFW 충돌 방지: 외부에서 Docker 컨테이너로의 직접 접근 차단
 *filter
 :DOCKER-USER - [0:0]
-# 내부망(192.168.45.0/24)에서 컨테이너 접근 허용
--A DOCKER-USER -s 192.168.45.0/24 -j ACCEPT
+# 호스트 서버(192.168.45.68)에서 컨테이너 접근 허용
+-A DOCKER-USER -s 192.168.45.68 -j ACCEPT
 # 로컬호스트에서 컨테이너 접근 허용
 -A DOCKER-USER -s 127.0.0.0/8 -j ACCEPT
 # Docker 내부 네트워크 허용 (컨테이너 간 통신)
