@@ -22,13 +22,13 @@ openssl req -new -x509 -nodes -days 3650 \
 
 # Redis 서버 인증서 생성
 # SAN:
-# - VPN/내부망에서 접속 시 사용하는 사설 IP(예: 10.10.0.1)
+# - VPN/내부망에서 접속 시 사용하는 사설 IP(예: 192.168.45.64)
 # - 컨테이너 이름(redis), localhost 포함
 openssl req -newkey rsa:2048 -nodes \
   -keyout redis-key.pem \
   -out redis-req.pem \
   -subj "/C=KR/O=Jumsim/CN=redis" \
-  -addext "subjectAltName=IP:10.10.0.1,DNS:redis,DNS:localhost"
+  -addext "subjectAltName=IP:192.168.45.64,DNS:redis,DNS:localhost"
 
 openssl x509 -req -days 3650 \
   -in redis-req.pem \
