@@ -1,0 +1,36 @@
+services:
+  bull-board:
+    image: venatum/bull-board:latest
+    container_name: bull-board
+    restart: unless-stopped
+    # Redis 비밀번호가 필요한 경우, infra/redis/.env(사용자 생성)에서 동일 변수명을 공유하는 것을 권장
+    env_file:
+      - ../redis/.env
+    environment:
+      # Bull-board 자체 설정(필요 시 추가)
+      PORT: "3000"
+
+      # Redis 연결 (BullMQ가 쓰는 Redis)
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_DB: "0"
+      REDIS_USE_TLS: "true"
+      # REDIS_PASSWORD는 env_file(../redis/.env)에서 로드됨 (선택)
+
+      # Node TLS가 자체 CA를 신뢰하도록 설정
+      NODE_EXTRA_CA_CERTS: /etc/redis/ssl/redis-ca.pem
+      NODE_TLS_REJECT_UNAUTHORIZED: "1"
+    ports:
+      - "192.168.45.64:3000:3000"
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ../redis/ssl:/etc/redis/ssl:ro
+    # Redis VM (8코어, 12GB)에서 redis와 함께 실행 시
+    cpus: "2"
+    mem_limit: 2g
+    networks:
+      - jumsim_network
+
+networks:
+  jumsim_network:
+    external: true

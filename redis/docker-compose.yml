@@ -1,0 +1,46 @@
+services:
+  redis-certs:
+    image: alpine:3.19
+    container_name: redis-certs
+    restart: "no"
+    working_dir: /ssl
+    volumes:
+      - ./ssl:/ssl
+    entrypoint: ["/bin/sh", "-lc"]
+    command:
+      - |
+        apk add --no-cache openssl >/dev/null
+        chmod +x /ssl/generate-certs.sh
+        /ssl/generate-certs.sh
+
+  redis:
+    build: .
+    env_file:
+      - .env
+    container_name: redis
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Seoul
+      # REDIS_PASSWORD는 env_file(.env)에서 로드됨 (선택)
+    depends_on:
+      redis-certs:
+        condition: service_completed_successfully
+    ports:
+      # TLS 전용 포트 (평문 포트는 비활성화됨: port 0)
+      - "192.168.45.64:6379:6379"
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./ssl:/etc/redis/ssl:ro
+    # VM 사양: 8코어, 12GB RAM (bull-board와 공유 시 여유 확보)
+    cpus: "6"
+    mem_limit: 10g
+    networks:
+      - jumsim_network
+
+volumes:
+  redis_data:
+
+networks:
+  jumsim_network:
+    external: true

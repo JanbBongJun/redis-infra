@@ -1,0 +1,149 @@
+# Docker 설치 및 설정 (Ubuntu)
+
+---
+
+## 1. 기존 패키지 제거 (충돌 방지)
+
+```bash
+for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do
+  sudo apt remove -y $pkg
+done
+```
+
+---
+
+## 2. apt 저장소 설정
+
+```bash
+sudo apt update
+sudo apt install -y ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+  https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt update
+```
+
+---
+
+## 3. Docker Engine 설치
+
+```bash
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+---
+
+## 4. Docker 서비스 시작 및 자동 시작 등록
+
+```bash
+sudo systemctl enable docker
+sudo systemctl start docker
+```
+
+---
+
+## 5. sudo 없이 Docker 사용 (현재 사용자 docker 그룹 추가)
+
+```bash
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+---
+
+## 6. 설치 확인
+
+```bash
+docker --version
+docker compose version
+docker run hello-world
+```
+
+---
+
+## 7. 메모리 설정 (Elasticsearch용, 필수)
+
+### vm.max_map_count 영구 설정
+```bash
+echo "vm.max_map_count=262144" | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+```
+
+### 확인
+```bash
+sysctl vm.max_map_count
+# 출력: vm.max_map_count = 262144
+```
+
+---
+
+## 요약 흐름
+
+패키지 정리 → apt 저장소 등록 → Docker 설치 → 서비스 등록 → 사용자 그룹 추가 → vm.max_map_count 설정
+
+---
+
+## 한 번에 설치 스크립트
+
+```bash
+#!/bin/bash
+set -e
+
+echo "=== 1. 기존 Docker 패키지 제거 ==="
+for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do
+  sudo apt remove -y $pkg 2>/dev/null || true
+done
+
+echo "=== 2. apt 저장소 설정 ==="
+sudo apt update
+sudo apt install -y ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+  https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt update
+
+echo "=== 3. Docker Engine 설치 ==="
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+echo "=== 4. Docker 서비스 시작 및 자동 시작 등록 ==="
+sudo systemctl enable docker
+sudo systemctl start docker
+
+echo "=== 5. 현재 사용자 docker 그룹 추가 ==="
+sudo usermod -aG docker $USER
+
+echo "=== 6. Elasticsearch용 vm.max_map_count 설정 ==="
+echo "vm.max_map_count=262144" | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+
+echo ""
+echo "=== 설치 완료 ==="
+docker --version
+docker compose version
+echo ""
+echo "※ docker 그룹 적용을 위해 터미널을 재접속하거나 아래 명령 실행:"
+echo "   newgrp docker"
+```
+
+### 사용 방법
+```bash
+# 스크립트 파일로 저장 후 실행
+curl -fsSL https://raw.githubusercontent.com/JanbBongJun/elk-infra/main/install-docker.sh | bash
+
+# 또는 직접 복붙 후 실행
+bash install-docker.sh
+```
